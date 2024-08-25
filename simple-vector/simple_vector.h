@@ -29,62 +29,40 @@ public:
     using Iterator = Type *;
     using ConstIterator = const Type *;
 
-    SimpleVector() noexcept
-    {
-        size_ = 0;
-        capacity_ = 0;
-    }
+    SimpleVector() noexcept = default;
 
     // Создаёт вектор из size элементов, инициализированных значением по умолчанию
-    explicit SimpleVector(size_t size)
+    explicit SimpleVector(size_t size) : SimpleVector(size, Type{})
     {
-        if (size)
-        {
-            size_ = size;
-            capacity_ = size;
-            ArrayPtr<Type> tmp(size);
-            items_.swap(tmp);
-            std::fill(begin(), end(), Type{});
-        }
     }
 
     // Создаёт вектор из size элементов, инициализированных значением value
-    SimpleVector(size_t size, const Type &value) : SimpleVector(size)
+    SimpleVector(size_t size, const Type &value) : size_(size), capacity_(size)
     {
         if (size)
         {
-            for (size_t i = 0; i < size; ++i)
-            {
-                items_[i] = value;
-            }
+            ArrayPtr<Type> tmp(size);
+            items_.swap(tmp);
+            std::fill(begin(), end(), value);
         }
     }
 
     // Создаёт вектор из std::initializer_list
     SimpleVector(std::initializer_list<Type> init) : SimpleVector(init.size())
     {
-        auto iter = begin();
-        for (const Type &t : init)
-        {
-            *iter = t;
-            ++iter;
-        }
+        std::copy(init.begin(), init.end(), begin());
     }
 
-    SimpleVector(const SimpleVector &other) : items_(other.capacity_)
+    SimpleVector(const SimpleVector &other) : SimpleVector(other.capacity_) //, size_(other.size_)
     {
-        capacity_ = other.capacity_;
+        std::copy(other.begin(), other.end(), items_.Get());
         size_ = other.size_;
-        for (size_t i = 0; i < size_; ++i)
-        {
-            items_[i] = other.items_[i];
-        }
     }
 
-    SimpleVector(SimpleVector &&other) : items_(std::move(other.items_)), size_(other.size_), capacity_(other.capacity_)
+    SimpleVector(SimpleVector &&other) : items_(std::move(other.items_))
     {
-        other.size_ = 0;
-        other.capacity_ = 0;
+        size_ = std::exchange(other.size_, 0);
+        capacity_ = std::exchange(other.capacity_, 0);
     }
 
     SimpleVector(ReserveProxyObj reserve_obj)
@@ -113,11 +91,8 @@ public:
         }
 
         items_ = std::move(rhs.items_);
-        this->size_ = rhs.size_;
-        this->capacity_ = rhs.capacity_;
-
-        rhs.size_ = 0;
-        rhs.capacity_ = 0;
+        this->size_ = std::exchange(rhs.size_, 0);
+        this->capacity_ = std::exchange(rhs.capacity_, 0);
 
         return *this;
     }
@@ -128,10 +103,6 @@ public:
         {
             ArrayPtr<Type> arr_rmp(new_capacity);
             std::move(begin(), end(), arr_rmp.Get());
-            for (auto iter = arr_rmp.Get() + size_; iter != arr_rmp.Get() + new_capacity; ++iter)
-            {
-                *iter = Type{};
-            }
 
             items_.swap(arr_rmp);
             capacity_ = new_capacity;
@@ -379,7 +350,6 @@ template <typename Type>
 inline bool operator<(const SimpleVector<Type> &lhs, const SimpleVector<Type> &rhs)
 {
     return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
-    ;
 }
 
 template <typename Type>

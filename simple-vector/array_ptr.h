@@ -13,8 +13,9 @@ public:
 
     // Создаёт в куче массив из size элементов типа Type.
     // Если size == 0, поле raw_ptr_ должно быть равно nullptr
-    explicit ArrayPtr(size_t size) {
-        raw_ptr_ = !size ? nullptr : new Type[size];
+    explicit ArrayPtr(size_t size) : raw_ptr_(!size ? nullptr : new Type[size]) 
+    {
+        // raw_ptr_ = !size ? nullptr : new Type[size];
     }
 
     // Конструктор из сырого указателя, хранящего адрес массива в куче либо nullptr
@@ -50,9 +51,7 @@ public:
     // Прекращает владением массивом в памяти, возвращает значение адреса массива
     // После вызова метода указатель на массив должен обнулиться
     [[nodiscard]] Type* Release() noexcept {
-        Type* return_pointer = raw_ptr_;
-        raw_ptr_ = nullptr;
-        return return_pointer;
+        return std::exchange(raw_ptr_, nullptr);
     }
 
     // Возвращает ссылку на элемент массива с индексом index
