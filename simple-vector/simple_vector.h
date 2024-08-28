@@ -153,7 +153,7 @@ public:
 
         Resize_Copy(size_ + 1);
         pos_tmp = begin() + dist;
-        std::copy(pos_tmp, end() - 1, pos_tmp + 1);
+        std::copy_backward(pos_tmp, end() - 1, pos_tmp + 1);
         *pos_tmp = value;
         return pos_tmp;
     }
@@ -266,9 +266,9 @@ public:
         }
         else if (new_size <= capacity_)
         {
-            for (auto iter = this->end(); iter != this->begin()+new_size; ++iter)
-            {
-                *iter = Type{};
+            for (auto iter = this->end(); iter != this->begin()+new_size; ++iter) 
+            { 
+                *iter = Type{}; 
             }
             size_ = new_size;
         }
@@ -279,24 +279,9 @@ public:
             ArrayPtr<Type> tmp(capacity_);
             std::move(begin(), end(), tmp.Get());
 
-            /* 
-            пробовал сделать так, и использовать нужный флаг, но оно не компилится
-            error: use of deleted function 'X& X::operator=(const X&)'
-            хотя казалось бы, всё нормально
-            поэтому просто скопировал функцию, поменяв одпну строчку
-            if (copy_move_flag)
-            {
-                std::move(begin(), end(), tmp.Get());
-            }
-            else
-            {
-                std::copy(begin(), end(), tmp.Get());
-            } 
-            */
-
             items_.swap(tmp);
 
-            for (auto iter = items_.Get() + size_; iter != items_.Get() + capacity_; ++iter)
+            for (auto iter = items_.Get() + size_; iter != items_.Get() + new_size; ++iter)
             {
                 *iter = Type{};
             }
@@ -315,10 +300,7 @@ public:
         }
         else if (new_size <= capacity_)
         {
-            for (auto iter = this->end(); iter != this->begin()+new_size; ++iter)
-            {
-                *iter = Type{};
-            }
+            std::fill(end(), begin() + new_size, Type{});
             size_ = new_size;
         }
         else if (new_size > capacity_)
@@ -329,7 +311,7 @@ public:
             std::copy(begin(), end(), tmp.Get());
             items_.swap(tmp);
 
-            for (auto iter = items_.Get() + size_; iter != items_.Get() + capacity_; ++iter)
+            for (auto iter = items_.Get() + size_; iter != items_.Get() + new_size; ++iter)
             {
                 *iter = Type{};
             }
